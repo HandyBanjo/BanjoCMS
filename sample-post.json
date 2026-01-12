@@ -1,0 +1,25 @@
+{
+  "title": "Welcome to Handy Banjo Blog",
+  "slug": "welcome-to-handy-banjo-blog",
+  "excerpt": "We're excited to launch our new blog! Here you'll find practical tips, expert insights, and helpful guides for all your home improvement needs.",
+  "body": "<h2>Welcome to Our Blog!</h2><p>We're thrilled to introduce the Handy Banjo blog - your go-to resource for home improvement tips, professional insights, and practical advice.</p><h3>What You'll Find Here</h3><ul><li><strong>Expert Tips:</strong> Learn from professionals with years of experience</li><li><strong>How-To Guides:</strong> Step-by-step instructions for common projects</li><li><strong>Product Reviews:</strong> Honest reviews of tools and materials</li><li><strong>Industry News:</strong> Stay updated on the latest trends</li></ul><h3>Our Commitment</h3><p>At Handy Banjo, we believe in quality over quantity. Every post is carefully crafted to provide real value - no fluff, just actionable advice you can use.</p><h3>Stay Connected</h3><p>Check back regularly for new content, or reach out to us with topics you'd like to see covered. We're here to help you succeed with your home improvement projects!</p>",
+  "status": "published",
+  "contentType": "post",
+  "featuredImage": "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1200",
+  "author": {
+    "_id": "000000000000000000000000",
+    "name": "Handy Banjo Team",
+    "email": "admin@handybanjo.com"
+  },
+  "metadata": {
+    "views": 0,
+    "likes": 0,
+    "tags": ["welcome", "announcement", "blog"],
+    "categories": ["News", "Updates"],
+    "seo": {
+      "metaTitle": "Welcome to Handy Banjo Blog - Home Improvement Tips & Guides",
+      "metaDescription": "Discover expert home improvement tips, how-to guides, and professional insights on the Handy Banjo blog. Quality content for homeowners and professionals.",
+      "keywords": ["home improvement", "DIY", "blog", "tips", "guides"]
+    }
+  }
+}

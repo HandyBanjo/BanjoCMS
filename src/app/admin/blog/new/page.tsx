@@ -1,0 +1,238 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ArrowLeft, Loader2, Save, Send } from "lucide-react";
+
+export default function NewBlogPage() {
+    const router = useRouter();
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        title: '',
+        slug: '',
+        excerpt: '',
+        body: '',
+        status: 'draft',
+        contentType: 'post',
+        featuredImage: '',
+        tags: '',
+        categories: '',
+        metaTitle: '',
+        metaDescription: '',
+    });
+
+    const handleSubmit = async (status: 'draft' | 'published') => {
+        setLoading(true);
+
+        try {
+            const payload = {
+                title: formData.title,
+                slug: formData.slug || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                excerpt: formData.excerpt,
+                body: formData.body,
+                status: status,
+                contentType: formData.contentType,
+                featuredImage: formData.featuredImage || undefined,
+                author: {
+                    _id: '000000000000000000000000', // TODO: Get from auth context
+                    name: 'Admin',
+                    email: 'admin@handybanjo.com',
+                },
+                metadata: {
+                    tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
+                    categories: formData.categories.split(',').map(c => c.trim()).filter(Boolean),
+                    seo: {
+                        metaTitle: formData.metaTitle || formData.title,
+                        metaDescription: formData.metaDescription || formData.excerpt,
+                    },
+                },
+            };
+
+            const response = await fetch('/api/content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) throw new Error('Failed to create post');
+
+            router.push('/admin/blog');
+        } catch (error) {
+            console.error('Failed to create post:', error);
+            alert('Failed to create post. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6 max-w-5xl mx-auto">
+            <div className="flex items-center gap-4">
+                <Button variant="ghost" size="icon" asChild>
+                    <Link href="/admin/blog">
+                        <ArrowLeft className="h-4 w-4" />
+                    </Link>
+                </Button>
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Create New Article</h1>
+                    <p className="text-muted-foreground">Draft a new article for your blog.</p>
+                </div>
+            </div>
+
+            <div className="grid gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Basic Information</CardTitle>
+                        <CardDescription>Core details of your article.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="title">Title *</Label>
+                            <Input
+                                id="title"
+                                required
+                                value={formData.title}
+                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                placeholder="Enter article title"
+                            />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="slug">Slug (URL)</Label>
+                            <Input
+                                id="slug"
+                                value={formData.slug}
+                                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                                placeholder="auto-generated-from-title"
+                            />
+                            <p className="text-[0.8rem] text-muted-foreground">Leave empty to auto-generate from title</p>
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="excerpt">Excerpt *</Label>
+                            <Textarea
+                                id="excerpt"
+                                required
+                                value={formData.excerpt}
+                                onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                                rows={3}
+                                placeholder="Brief summary of the article"
+                            />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="body">Content *</Label>
+                            <Textarea
+                                id="body"
+                                required
+                                value={formData.body}
+                                onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+                                rows={15}
+                                className="font-mono"
+                                placeholder="Write your article content here (HTML supported)"
+                            />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="featuredImage">Featured Image URL</Label>
+                            <Input
+                                id="featuredImage"
+                                type="url"
+                                value={formData.featuredImage}
+                                onChange={(e) => setFormData({ ...formData, featuredImage: e.target.value })}
+                                placeholder="https://example.com/image.jpg"
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* ... Metadata and SEO Cards similar to NEW POST ... */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Metadata</CardTitle>
+                        <CardDescription>Tags and categories for organization.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="tags">Tags (comma-separated)</Label>
+                            <Input
+                                id="tags"
+                                value={formData.tags}
+                                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                                placeholder="home improvement, DIY, tips"
+                            />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="categories">Categories (comma-separated)</Label>
+                            <Input
+                                id="categories"
+                                value={formData.categories}
+                                onChange={(e) => setFormData({ ...formData, categories: e.target.value })}
+                                placeholder="Guides, Tips, News"
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>SEO</CardTitle>
+                        <CardDescription>Search engine optimization settings.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="metaTitle">Meta Title</Label>
+                            <Input
+                                id="metaTitle"
+                                value={formData.metaTitle}
+                                onChange={(e) => setFormData({ ...formData, metaTitle: e.target.value })}
+                                placeholder="Leave empty to use article title"
+                            />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="metaDescription">Meta Description</Label>
+                            <Textarea
+                                id="metaDescription"
+                                value={formData.metaDescription}
+                                onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
+                                rows={2}
+                                placeholder="Leave empty to use excerpt"
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <div className="flex items-center gap-4 sticky bottom-6 bg-background/95 backdrop-blur py-4 border-t z-10">
+                    <Button
+                        disabled={loading}
+                        onClick={() => handleSubmit('published')}
+                        className="w-full sm:w-auto"
+                    >
+                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                        Publish
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        disabled={loading}
+                        onClick={() => handleSubmit('draft')}
+                        className="w-full sm:w-auto"
+                    >
+                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Save as Draft
+                    </Button>
+                    <Button variant="outline" asChild className="w-full sm:w-auto ml-auto sm:ml-0">
+                        <Link href="/admin/blog">Cancel</Link>
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+}
