@@ -1,7 +1,10 @@
 import { MongoClient, Db } from 'mongodb';
 
 const uri = process.env.MONGODB_URI || '';
-const options = {};
+const options = {
+  tls: true,
+  tlsAllowInvalidCertificates: true,
+};
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
