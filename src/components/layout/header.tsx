@@ -69,10 +69,7 @@ export function Header() {
                         })}
                     </div>
                     <div className="absolute bottom-4 left-0 w-full px-4">
-                        <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive">
-                            <LogOut className="h-4 w-4" />
-                            Sign Out
-                        </Button>
+
                     </div>
                 </SheetContent>
             </Sheet>
