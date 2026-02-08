@@ -1,12 +1,13 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/mongodb';
-import { Content, ContentQuery } from '@/lib/models';
+import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const supabase = await createClient();
 
     // Base params
     const status = searchParams.get('status');
@@ -14,54 +15,25 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
 
-    // Advanced filters
-    const platform = searchParams.get('platform');
-    const parentId = searchParams.get('parentId'); // 'null' string checks for root items
-    const updateType = searchParams.get('updateType');
-    const search = searchParams.get('search');
+    // Filter building
+    let query = supabase
+      .from('content')
+      .select('*', { count: 'exact' });
 
-    const db = await getDatabase();
-    const collection = db.collection<Content>('content');
+    if (status && status !== 'all') query = query.eq('status', status);
+    if (contentType && contentType !== 'all') query = query.eq('content_type', contentType);
+    
+    // Pagination
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+    
+    query = query.range(from, to).order('created_at', { ascending: false });
 
-    const query: any = {};
+    const { data: content, error, count } = await query;
 
-    if (status && status !== 'all') query.status = status;
-    if (contentType && contentType !== 'all') query.contentType = contentType;
-    if (platform && platform !== 'all') query.platform = platform;
-    if (updateType && updateType !== 'all') query.updateType = updateType;
+    if (error) throw error;
 
-    // Handle parentId filtering for Resources
-    if (parentId !== null && parentId !== undefined) {
-      if (parentId === 'root') {
-        query.parentId = { $in: [null, undefined] };
-      } else {
-        query.parentId = parentId;
-      }
-    }
-
-    // Unified Search
-    if (search) {
-      const searchRegex = { $regex: search, $options: 'i' };
-      query.$or = [
-        { title: searchRegex },
-        { body: searchRegex },
-        { summary: searchRegex },
-        { excerpt: searchRegex },
-      ];
-    }
-
-    const skip = (page - 1) * limit;
-
-    const [content, total] = await Promise.all([
-      collection
-        .find(query)
-        .sort({ publishedAt: -1, createdAt: -1 }) // Sort by newest
-        .skip(skip)
-        .limit(limit)
-        .toArray(),
-      collection.countDocuments(query),
-    ]);
-
+    const total = count || 0;
     const pages = Math.ceil(total / limit);
 
     return NextResponse.json({
@@ -85,36 +57,50 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const supabase = await createClient();
+    
+    const { data: { user } } = await supabase.auth.getUser();
 
-    const db = await getDatabase();
-    const collection = db.collection<Content>('content');
-
-    // Create base content object
-    const newContent = {
-      ...body,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      metadata: {
-        views: 0,
-        likes: 0,
-        tags: body.metadata?.tags || [],
-        categories: body.metadata?.categories || [],
-        seo: body.metadata?.seo || {},
-        ...(body.metadata || {}), // Spread remaining generic metadata
-      },
-    };
-
-    // Auto-set publishedAt if status is published
-    if (body.status === 'published' && !body.publishedAt) {
-      newContent.publishedAt = new Date();
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const result = await collection.insertOne(newContent as Content);
+    // Transform payload to match SQL schema
+    const newContent = {
+      title: body.title,
+      slug: body.slug,
+      content_type: body.content_type || body.contentType || 'post',
+      status: body.status,
+      body: body.body,
+      excerpt: body.excerpt,
+      featured_image: body.featured_image || body.featuredImage, // Support both snake/camel
+      author_id: user.id,
+      author_email: user.email,
+      author_name: body.author?.name || 'Admin',
+      
+      // Specialized fields
+      platform: body.platform,
+      update_type: body.update_type,
+      version: body.version,
+      external_link: body.external_link,
+      parent_id: body.parent_id,
+
+      metadata: body.metadata || {},
+      published_at: body.status === 'published' ? new Date().toISOString() : null,
+    };
+
+    const { data, error } = await supabase
+      .from('content')
+      .insert(newContent)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json(
       {
         message: 'Content created successfully',
-        id: result.insertedId
+        content: data
       },
       { status: 201 }
     );

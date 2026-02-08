@@ -1,9 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/mongodb';
-import { Content } from '@/lib/models';
-import { ObjectId } from 'mongodb';
 
-export const dynamic = 'force-dynamic';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,
@@ -11,27 +8,19 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const db = await getDatabase();
-    const collection = db.collection<Content>('content');
+    const supabase = await createClient();
 
-    const content = await collection.findOne({ _id: new ObjectId(id) });
+    const { data, error } = await supabase
+      .from('content')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (!content) {
-      return NextResponse.json(
-        { error: 'Content not found' },
-        { status: 404 }
-      );
-    }
+    if (error) throw error;
+    if (!data) return NextResponse.json({ error: 'Content not found' }, { status: 404 });
 
-    // Increment view count
-    await collection.updateOne(
-      { _id: new ObjectId(id) },
-      { $inc: { 'metadata.views': 1 } }
-    );
-
-    return NextResponse.json({ content });
+    return NextResponse.json(data);
   } catch (error: any) {
-    console.error('Content fetch error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch content', details: error.message },
       { status: 500 }
@@ -46,35 +35,42 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
+    const supabase = await createClient();
 
-    const db = await getDatabase();
-    const collection = db.collection<Content>('content');
-
-    const updateData: any = {
-      ...body,
-      updatedAt: new Date(),
+    // Map fields
+    const updates: any = {
+      title: body.title,
+      slug: body.slug,
+      body: body.body,
+      excerpt: body.excerpt,
+      status: body.status,
+      featured_image: body.featured_image || body.featuredImage,
+      metadata: body.metadata,
+      
+      // Specialized fields
+      platform: body.platform,
+      update_type: body.update_type,
+      version: body.version,
+      external_link: body.external_link,
+      parent_id: body.parent_id,
+      
+      updated_at: new Date().toISOString(),
     };
+    
+    // Remove undefined
+    Object.keys(updates).forEach(key => updates[key] === undefined && delete updates[key]);
 
-    // Set publishedAt if status changed to published
-    if (body.status === 'published' && !body.publishedAt) {
-      updateData.publishedAt = new Date();
-    }
+    const { data, error } = await supabase
+      .from('content')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-    const result = await collection.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: updateData }
-    );
+    if (error) throw error;
 
-    if (result.matchedCount === 0) {
-      return NextResponse.json(
-        { error: 'Content not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ message: 'Content updated successfully' });
+    return NextResponse.json(data);
   } catch (error: any) {
-    console.error('Content update error:', error);
     return NextResponse.json(
       { error: 'Failed to update content', details: error.message },
       { status: 500 }
@@ -88,21 +84,17 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const db = await getDatabase();
-    const collection = db.collection<Content>('content');
+    const supabase = await createClient();
 
-    const result = await collection.deleteOne({ _id: new ObjectId(id) });
+    const { error } = await supabase
+      .from('content')
+      .delete()
+      .eq('id', id);
 
-    if (result.deletedCount === 0) {
-      return NextResponse.json(
-        { error: 'Content not found' },
-        { status: 404 }
-      );
-    }
+    if (error) throw error;
 
     return NextResponse.json({ message: 'Content deleted successfully' });
   } catch (error: any) {
-    console.error('Content deletion error:', error);
     return NextResponse.json(
       { error: 'Failed to delete content', details: error.message },
       { status: 500 }

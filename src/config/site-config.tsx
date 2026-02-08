@@ -5,6 +5,8 @@ import {
     Library,
     Share2,
     Rocket,
+    Newspaper,
+    Rss,
 } from "lucide-react";
 
 export const sidebarItems = [
@@ -14,9 +16,9 @@ export const sidebarItems = [
         icon: LayoutDashboard,
     },
     {
-        title: "Blog",
-        href: "/admin/blog",
-        icon: BookType,
+        title: "Platform Updates",
+        href: "/admin/updates",
+        icon: Rocket,
     },
     {
         title: "Resources",
@@ -24,14 +26,19 @@ export const sidebarItems = [
         icon: Library,
     },
     {
-        title: "Social Reposts",
-        href: "/admin/social",
-        icon: Share2,
+        title: "Press & Media",
+        href: "/admin/press",
+        icon: Newspaper,
     },
     {
-        title: "Platform Updates",
-        href: "/admin/updates",
-        icon: Rocket,
+        title: "Social Feed",
+        href: "/admin/feed",
+        icon: Rss,
+    },
+    {
+        title: "Blog Articles",
+        href: "/admin/blog",
+        icon: BookType,
     },
     {
         title: "Settings",
