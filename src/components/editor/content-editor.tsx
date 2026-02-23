@@ -13,7 +13,15 @@ import { ArrowLeft, Loader2, Save, Send, Plus, Trash } from "lucide-react";
 import Link from 'next/link';
 import { createClient } from "@/lib/supabase/client";
 import { Content, ContentType, Platform, UpdateType } from '@/lib/models';
-import { RichEditor } from './rich-editor';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorBoundary } from './error-boundary';
+
+const RichEditor = dynamic(() => import('./rich-editor').then(mod => mod.RichEditor), { 
+    ssr: false,
+    loading: () => <Skeleton className="w-full h-[400px] rounded-md" />
+});
+
 import { CommaSeparatedInput } from "@/components/ui/comma-separated-input";
 import { ImageUploader } from "./image-uploader";
 
@@ -320,10 +328,12 @@ export function ContentEditor({ mode, id, defaultType = 'post' }: ContentEditorP
 
                                     <div className="space-y-2">
                                         <Label>Main Content (HTML/Markdown)</Label>
-                                        <RichEditor 
-                                            value={formData.body || ''}
-                                            onChange={value => handleChange('body', value)}
-                                        />
+                                        <ErrorBoundary>
+                                            <RichEditor 
+                                                value={formData.body || ''}
+                                                onChange={value => handleChange('body', value)}
+                                            />
+                                        </ErrorBoundary>
                                     </div>
                                 </>
                             )}

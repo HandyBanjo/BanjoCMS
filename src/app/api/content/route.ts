@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
     // Filter building
     let query = supabase
       .from('content')
-      .select('*', { count: 'exact' });
+      .select('*', { count: 'exact' })
+      .is('deleted_at', null);
 
     if (status && status !== 'all') query = query.eq('status', status);
     if (contentType && contentType !== 'all') query = query.eq('content_type', contentType);

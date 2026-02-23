@@ -13,6 +13,7 @@ import Image from '@tiptap/extension-image';
 import { Image as ImageIcon } from "lucide-react";
 import { uploadImage } from "@/lib/upload";
 import { useRef, useState } from "react";
+import imageCompression from 'browser-image-compression';
 
 interface RichEditorProps {
     value: string;
@@ -72,7 +73,24 @@ export function RichEditor({ value, onChange }: RichEditorProps) {
 
         try {
             setUploading(true);
-            const url = await uploadImage(file, 'images', 'content');
+            
+            // 5MB Limit Guardrail
+            const fileSizeMB = file.size / 1024 / 1024;
+            if (fileSizeMB > 5) {
+                alert(`File size is ${fileSizeMB.toFixed(2)}MB. Please upload an image smaller than 5MB.`);
+                return;
+            }
+
+            // Optimization
+            const options = {
+                maxSizeMB: 1, // Compress to max 1MB for embedded rich text
+                maxWidthOrHeight: 1200, // Reduced max width for inline editor images
+                useWebWorker: true,
+            };
+            
+            const compressedFile = await imageCompression(file, options);
+            const url = await uploadImage(compressedFile, 'images', 'content');
+            
             editor.chain().focus().setImage({ src: url }).run();
         } catch (error) {
             console.error('Failed to upload image', error);

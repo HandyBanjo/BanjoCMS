@@ -50,7 +50,7 @@ export default function SettingsPage() {
             <form onSubmit={handleSubmit}>
                 <Card>
                     <CardHeader>
-                        <CardTitle>Generai Site Information</CardTitle>
+                        <CardTitle>General Site Information</CardTitle>
                         <CardDescription>
                             Configure the basic details of your website.
                         </CardDescription>

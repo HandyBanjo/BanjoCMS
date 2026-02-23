@@ -13,7 +13,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Plus, Trash2, Edit, Loader2, Link as LinkIcon } from "lucide-react";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Plus, Trash2, Edit, Loader2, Link as LinkIcon, Eye } from "lucide-react";
 import { Content, ContentType } from "@/lib/models";
 
 interface ContentListProps {
@@ -47,8 +58,6 @@ export function ContentList({ contentType, title, description, basePath }: Conte
     };
 
     const deletePost = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this item?')) return;
-
         try {
             await fetch(`/api/content/${id}`, { method: 'DELETE' });
             fetchPosts();
@@ -136,7 +145,9 @@ export function ContentList({ contentType, title, description, basePath }: Conte
                                             </TableCell>
                                         )}
                                         <TableCell className="font-medium">
-                                            <div>{post.title}</div>
+                                            <Link href={`/api/content/${post.id}`} target="_blank" className="hover:underline flex items-center gap-1">
+                                                {post.title}
+                                            </Link>
                                             {(post.slug && contentType !== 'feed') && (
                                                 <div className="text-xs text-muted-foreground font-mono">{post.slug}</div>
                                             )}
@@ -158,19 +169,42 @@ export function ContentList({ contentType, title, description, basePath }: Conte
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
-                                                <Button variant="ghost" size="icon" asChild>
+                                                <Button variant="ghost" size="icon" asChild title="Preview Content API">
+                                                    <Link href={`/api/content/${post.id}`} target="_blank">
+                                                        <Eye className="h-4 w-4" />
+                                                    </Link>
+                                                </Button>
+                                                <Button variant="ghost" size="icon" asChild title="Edit Content">
                                                     <Link href={`${basePath}/${post.id}`}>
                                                         <Edit className="h-4 w-4" />
                                                     </Link>
                                                 </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                    onClick={() => deletePost(post.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            title="Delete Content"
+                                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Are you sure you want to delete this article? This action can be undone from Trash.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => deletePost(post.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                                                Move to Trash
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
                                             </div>
                                         </TableCell>
                                     </TableRow>

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Upload, X, Image as ImageIcon } from "lucide-react";
 import { uploadImage } from "@/lib/upload";
+import imageCompression from 'browser-image-compression';
 
 interface ImageUploaderProps {
     value?: string;
@@ -15,15 +16,37 @@ interface ImageUploaderProps {
 
 export function ImageUploader({ value, onChange, folder = 'uploads' }: ImageUploaderProps) {
     const [uploading, setUploading] = useState(false);
+    const [imageError, setImageError] = useState(false);
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         try {
             setUploading(true);
             const file = e.target.files?.[0];
-            if (!file) return;
+            if (!file) {
+                setUploading(false);
+                return;
+            }
 
-            const url = await uploadImage(file, 'images', folder);
+            // 5MB Limit Guardrail
+            const fileSizeMB = file.size / 1024 / 1024;
+            if (fileSizeMB > 5) {
+                alert(`File size is ${fileSizeMB.toFixed(2)}MB. Please upload an image smaller than 5MB.`);
+                setUploading(false);
+                if (e.target) e.target.value = '';
+                return;
+            }
+
+            // Optimization
+            const options = {
+                maxSizeMB: 1, // Target size is 1MB after compression
+                maxWidthOrHeight: 1920,
+                useWebWorker: true,
+            };
+            const compressedFile = await imageCompression(file, options);
+
+            const url = await uploadImage(compressedFile, 'images', folder);
             onChange(url);
+            setImageError(false);
 
         } catch (error) {
             console.error('Error uploading image:', error);
@@ -37,11 +60,19 @@ export function ImageUploader({ value, onChange, folder = 'uploads' }: ImageUplo
         <div className="space-y-4">
             {value ? (
                 <div className="relative aspect-video w-full rounded-lg overflow-hidden border bg-muted">
-                    <img 
-                        src={value} 
-                        alt="Preview" 
-                        className="w-full h-full object-cover"
-                    />
+                    {imageError ? (
+                        <div className="flex flex-col items-center justify-center w-full h-full text-muted-foreground bg-secondary/30">
+                            <ImageIcon className="h-8 w-8 mb-2 opacity-50" />
+                            <span className="text-xs">Image unavailable</span>
+                        </div>
+                    ) : (
+                        <img 
+                            src={value} 
+                            alt="Preview" 
+                            className="w-full h-full object-cover"
+                            onError={() => setImageError(true)}
+                        />
+                    )}
                     <Button
                         variant="destructive"
                         size="icon"
@@ -82,7 +113,10 @@ export function ImageUploader({ value, onChange, folder = 'uploads' }: ImageUplo
                 <Input 
                     placeholder="Or enter image URL manualy..." 
                     value={value || ''}
-                    onChange={(e) => onChange(e.target.value)}
+                    onChange={(e) => {
+                        onChange(e.target.value);
+                        setImageError(false);
+                    }}
                     className="text-xs font-mono"
                 />
             </div>

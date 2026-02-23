@@ -88,7 +88,7 @@ export async function DELETE(
 
     const { error } = await supabase
       .from('content')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', id);
 
     if (error) throw error;
