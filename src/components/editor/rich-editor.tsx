@@ -12,7 +12,7 @@ import { Toggle } from "@/components/ui/toggle";
 import Image from '@tiptap/extension-image';
 import { Image as ImageIcon } from "lucide-react";
 import { uploadImage } from "@/lib/upload";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import imageCompression from 'browser-image-compression';
 
 interface RichEditorProps {
@@ -43,6 +43,13 @@ export function RichEditor({ value, onChange }: RichEditorProps) {
             onChange(editor.getHTML());
         },
     });
+
+    // Sync external value changes to the editor (crucial for async data loading in edit mode)
+    useEffect(() => {
+        if (editor && value !== editor.getHTML()) {
+            editor.commands.setContent(value);
+        }
+    }, [editor, value]);
 
     if (!editor) {
         return null;
